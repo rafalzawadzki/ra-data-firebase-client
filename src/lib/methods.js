@@ -64,7 +64,7 @@ const upload = async (fieldName, submitedData, id, resourceName, resourcePath) =
       .child(`${resourcePath}/${id}/${fieldName}`);
     const snapshot = await ref.put(rawFile);
     result[fieldName] = [{}];
-    result[fieldName][0].uploadedAt = Date();
+    result[fieldName][0].uploadedAt = new Date();
     result[fieldName][0].src = snapshot.downloadURL.split('?').shift() + '?alt=media';
     result[fieldName][0].type = rawFile.type;
     if (rawFile.type.indexOf('image/') === 0) {
@@ -97,10 +97,10 @@ const save = async (
   }
 
   if (isNew) {
-    Object.assign(data, { [timestampFieldNames.createdAt]: Date() });
+    Object.assign(data, { [timestampFieldNames.createdAt]: new Date() });
   }
 
-  data = Object.assign(previous, { [timestampFieldNames.updatedAt]: Date() }, data);
+  data = Object.assign(previous, { [timestampFieldNames.updatedAt]: new Date() }, data);
 
   if (!data.id) {
     data.id = id;
