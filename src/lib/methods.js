@@ -227,9 +227,14 @@ const getList = async (params, resourceName, resourceData) => {
   }
 };
 
-const getMany = (params, resourceName, resourceData) => {
-  let data = Object.values(resourceData).filter(item => params.ids.indexOf(item.id) > -1);
-  return { data, ids: params.ids };
+const getMany = async (params, resourceName, resourceData) => {
+  let data = [];
+  /* eslint-disable no-await-in-loop */
+  for (const id of params.ids) {
+    let { data: item } = await getOne({ id }, resourceName, resourceData);
+    data.push(item);
+  }
+  return { data };
 };
 
 const getManyReference = async (params, resourceName, resourceData) => {
