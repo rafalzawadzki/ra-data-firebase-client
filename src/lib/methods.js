@@ -1,4 +1,6 @@
-import firebase from 'firebase';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import 'firebase/storage';
 import sortBy from 'sort-by';
 import { CREATE } from 'react-admin';
 
@@ -161,18 +163,53 @@ const getItemID = (params, type, resourceName, resourcePath, resourceData) => {
   return itemId;
 };
 
-const getOne = (params, resourceName, resourceData) => {
-  if (params.id && resourceData[params.id]) {
-    return { data: resourceData[params.id] };
+const getOne = async (params, resourceName, resourceData) => {
+  if (params.id) {
+    let result = await firebase
+      .firestore()
+      .collection(resourceName)
+      .doc(params.id)
+      .get();
+
+    if (result.exists) {
+      return { data: result.data() };
+    } else {
+      throw new Error('Id not found');
+    }
   } else {
     throw new Error('Id not found');
   }
 };
 
-const getList = (params, resourceName, resourceData) => {
+/**
+ * params example:
+ * pagination: { page: 1, perPage: 5 },
+ * sort: { field: 'title', order: 'ASC' },
+ * filter: { author_id: 12 }
+ */
+
+const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
     let values = [];
-    values = Object.values(resourceData);
+    let snapshots = await firebase
+      .firestore()
+      .collection(resourceName)
+      .get();
+
+    for (const snapshot of snapshots.docs) {
+      values.push(snapshot.data());
+    }
+
+    if (params.filter) {
+      values = values.filter(item => {
+        let meetsFilters = true;
+        for (const key of Object.keys(params.filter)) {
+          meetsFilters = item[key] === params.filter[key];
+        }
+        return meetsFilters;
+      });
+    }
+
     if (params.sort) {
       values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
     }
@@ -195,6 +232,17 @@ const getMany = (params, resourceName, resourceData) => {
   return { data, ids: params.ids };
 };
 
+const getManyReference = async (params, resourceName, resourceData) => {
+  if (params.target) {
+    if (!params.filter) params.filter = {};
+    params.filter[params.target] = params.id;
+    let { data, total } = await getList(params, resourceName, resourceData);
+    return { data, total };
+  } else {
+    throw new Error('Error processing request');
+  }
+};
+
 export default {
   upload,
   save,
@@ -204,6 +252,7 @@ export default {
   getOne,
   getList,
   getMany,
+  getManyReference,
   addUploadFeature,
   convertFileToBase64
 };

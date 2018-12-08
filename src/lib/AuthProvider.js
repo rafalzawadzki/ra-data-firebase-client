@@ -1,6 +1,8 @@
 /* globals localStorage */
 import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from 'react-admin';
-import firebase from 'firebase';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import 'firebase/auth';
 
 const baseConfig = {
   userProfilePath: '/users/',

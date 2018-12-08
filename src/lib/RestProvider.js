@@ -1,4 +1,6 @@
-import firebase from 'firebase';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import 'firebase/auth';
 import Methods from './methods';
 
 import { GET_LIST, GET_ONE, GET_MANY, GET_MANY_REFERENCE, CREATE, UPDATE, DELETE, DELETE_MANY } from 'react-admin';
@@ -19,10 +21,10 @@ const BaseConfiguration = {
 
 const RestProvider = (firebaseConfig = {}, options = {}) => {
   options = Object.assign({}, BaseConfiguration, options);
-  const { timestampFieldNames, trackedResources, initialQuerytimeout } = options;
+  const { timestampFieldNames, trackedResources } = options;
 
   const resourcesStatus = {};
-  const resourcesReferences = {};
+  // const resourcesReferences = {};
   const resourcesData = {};
   const resourcesPaths = {};
   const resourcesUploadFields = {};
@@ -42,11 +44,12 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
   const getItemID = options.getItemID || Methods.getItemID;
   const getOne = options.getOne || Methods.getOne;
   const getMany = options.getMany || Methods.getMany;
+  const getManyReference = options.getManyReference || Methods.getManyReference;
   const delMany = options.delMany || Methods.delMany;
   const getList = options.getList || Methods.getList;
 
   const firebaseSaveFilter = options.firebaseSaveFilter ? options.firebaseSaveFilter : data => data;
-  const firebaseGetFilter = options.firebaseGetFilter ? options.firebaseGetFilter : data => data;
+  // const firebaseGetFilter = options.firebaseGetFilter ? options.firebaseGetFilter : data => data;
 
   // Sanitize Resources
   trackedResources.map((resource, index) => {
@@ -68,71 +71,6 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
     resourcesData[name] = {};
   });
 
-  const initializeResource = ({ name, isPublic }, resolve) => {
-    let ref = (resourcesReferences[name] = firebase.firestore().collection(resourcesPaths[name]));
-    resourcesData[name] = [];
-
-    if (isPublic) {
-      subscribeResource(ref, name, resolve);
-    } else {
-      firebase.auth().onAuthStateChanged(auth => {
-        if (auth) {
-          subscribeResource(ref, name, resolve);
-        }
-      });
-    }
-
-    setTimeout(resolve, initialQuerytimeout);
-
-    return true;
-  };
-
-  const subscribeResource = (ref, name, resolve) => {
-    ref.onSnapshot(function(snapshot) {
-      snapshot.docChanges().forEach(function(change) {
-        if (change.type === 'added') {
-          if (!resourcesData[name]) {
-            if (change.doc.id === name) {
-              const entries = change.doc.data() || {};
-              Object.keys(entries).map(key => {
-                resourcesData[name][key] = firebaseGetFilter(entries[key], name);
-              });
-              Object.keys(resourcesData[name]).forEach(itemKey => {
-                resourcesData[name][itemKey].id = itemKey;
-              });
-              resolve();
-            }
-          } else {
-            resourcesData[name][change.doc.id] = firebaseGetFilter(
-              Object.assign(
-                {},
-                {
-                  id: change.doc.id
-                },
-                change.doc.data()
-              ),
-              name
-            );
-          }
-        }
-        if (change.type === 'modified') {
-          resourcesData[name][change.doc.id] = change.doc.data();
-        }
-        if (change.type === 'removed') {
-          if (resourcesData[name][change.doc.id]) {
-            delete resourcesData[name][change.doc.id];
-          }
-        }
-      });
-    });
-  };
-
-  trackedResources.map(resource => {
-    resourcesStatus[resource.name] = new Promise(resolve => {
-      initializeResource(resource, resolve);
-    });
-  });
-
   /**
    * @param {string} type Request type, e.g GET_LIST
    * @param {string} resourceName Resource name, e.g. "posts"
@@ -151,12 +89,11 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
         // console.log('GET_MANY');
-        console.log('reselut', result);
         return result;
 
       case GET_MANY_REFERENCE:
         // console.log('GET_MANY_REFERENCE');
-        result = await getMany(params, resourceName, resourcesData[resourceName]);
+        result = await getManyReference(params, resourceName, resourcesData[resourceName]);
         return result;
 
       case GET_ONE:
@@ -176,7 +113,7 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
         return result;
       case UPDATE:
       case CREATE:
-        console.log('UPDATE/CREATE');
+        // console.log('UPDATE/CREATE');
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], resourcesData[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
