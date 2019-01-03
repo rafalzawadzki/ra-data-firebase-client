@@ -172,7 +172,12 @@ const getOne = async (params, resourceName, resourceData) => {
       .get();
 
     if (result.exists) {
-      return { data: result.data() };
+      const data = result.data();
+
+      if (data && data.id == null) {
+        data['id'] = result.id;
+      }
+      return { data: data };
     } else {
       throw new Error('Id not found');
     }
@@ -197,7 +202,11 @@ const getList = async (params, resourceName, resourceData) => {
       .get();
 
     for (const snapshot of snapshots.docs) {
-      values.push(snapshot.data());
+      const data = snapshot.data();
+      if (data && data.id == null) {
+        data['id'] = snapshot.id;
+      }
+      values.push(data);
     }
 
     if (params.filter) {
