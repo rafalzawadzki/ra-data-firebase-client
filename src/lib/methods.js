@@ -69,7 +69,7 @@ const upload = async (fieldName, submitedData, id, resourceName, resourcePath) =
     const downloadURL = await snapshot.ref.getDownloadURL();
     result[fieldName] = [{}];
     result[fieldName][0].uploadedAt = new Date();
-    result[fieldName][0].src = downloadURL
+    result[fieldName][0].src = downloadURL;
     result[fieldName][0].type = rawFile.type;
     if (rawFile.type.indexOf('image/') === 0) {
       try {
