@@ -113,22 +113,20 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
         return result;
       case UPDATE:
       case CREATE:
-        // console.log('UPDATE/CREATE');
-        let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], resourcesData[resourceName]);
+        let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
             )
           : [];
-        const currentData = resourcesData[resourceName][itemId] || {};
-        const uploadResults = await Promise.all(uploads);
-
+        const currentData = type === CREATE?{}:params.previousData//data.resourcesData[resourceName][itemId] || {};
+        const uploadResults = await Promise.all(uploads); 
         result = await save(
           itemId,
           params.data,
           currentData,
           resourceName,
-          resourcesPaths[resourceName],
+          null,
           firebaseSaveFilter,
           uploadResults,
           type === CREATE,
