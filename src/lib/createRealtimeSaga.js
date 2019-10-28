@@ -1,11 +1,12 @@
 import realtimeSaga from 'ra-realtime';
+import { SnapshotFlag } from './methods.js';
 
 const observeRequest = dataProvider => (type, resource, params) => {
    
     return {
         subscribe(observer) {
         
-            params.snapshot = true;
+            params[SnapshotFlag] = true;
           
             const query = dataProvider(type, resource, params);
             const cancelSnapshots = query.onSnapshot(
