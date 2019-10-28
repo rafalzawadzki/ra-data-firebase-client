@@ -234,11 +234,13 @@ const getList = async (params, resourceName, resourceData) => {
 
 const getMany = async (params, resourceName, resourceData) => {
   let data = [];
-  /* eslint-disable no-await-in-loop */
-  for (const id of params.ids) {
-    let { data: item } = await getOne({ id }, resourceName, resourceData);
-    data.push(item);
-  }
+  
+  const firestore = firabase.firestore()
+  
+  const snapshot = await firestore.getAll(...params.ids.map(id => {firestore.collection(resourceName).doc(id)}))
+  
+  snapshot.forEach(docRef => {data.push(docRef.data())})
+  
   return { data };
 };
 
