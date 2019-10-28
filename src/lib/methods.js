@@ -1,7 +1,6 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/storage';
-import sortBy from 'sort-by';
 import { CREATE } from 'react-admin';
 
 const convertFileToBase64 = file =>
@@ -167,11 +166,15 @@ const getItemID = (params, type, resourceName, resourcePath, resourceData) => {
 
 const getOne = async (params, resourceName, resourceData) => {
   if (params.id) {
-    let result = await firebase
+    
+    const query = firebase
       .firestore()
       .collection(resourceName)
-      .doc(params.id)
-      .get();
+      .doc(params.id);
+    
+    if (params.snaphost) return query;
+    
+    const result = await query.get();
 
     if (result.exists) {
       const data = result.data();
@@ -198,10 +201,20 @@ const getOne = async (params, resourceName, resourceData) => {
 const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
     let values = [];
-    let snapshots = await firebase
-      .firestore()
-      .collection(resourceName)
-      .get();
+    
+    const query = firebase
+        .firestore()
+        .collection(resourceName)
+        .limit(params.pagination.perPage)
+        .offset(params.pagination.perPage * params.pagination.page);
+    
+    if (params.sort) query.orderBy(params.sort.field, params.sort.order.toLower())
+    
+    Object.keys(params.filter).forEach(field => {query.where(field, '==', params.filter[field])})
+    
+    if (params.snaphost) return query;
+    
+    let snapshots = await query.get()
 
     for (const snapshot of snapshots.docs) {
       const data = snapshot.data();
@@ -211,28 +224,9 @@ const getList = async (params, resourceName, resourceData) => {
       values.push(data);
     }
 
-    if (params.filter) {
-      values = values.filter(item => {
-        let meetsFilters = true;
-        for (const key of Object.keys(params.filter)) {
-          meetsFilters = item[key] === params.filter[key];
-        }
-        return meetsFilters;
-      });
-    }
-
-    if (params.sort) {
-      values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
-    }
-
     const keys = values.map(i => i.id);
-    const { page, perPage } = params.pagination;
-    const _start = (page - 1) * perPage;
-    const _end = page * perPage;
-    const data = values ? values.slice(_start, _end) : [];
-    const ids = keys.slice(_start, _end) || [];
-    const total = values ? values.length : 0;
-    return { data, ids, total };
+
+    return { values, keys, values.length };
   } else {
     throw new Error('Error processing request');
   }
