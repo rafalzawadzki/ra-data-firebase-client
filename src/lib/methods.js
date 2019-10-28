@@ -3,6 +3,10 @@ import 'firebase/firestore';
 import 'firebase/storage';
 import { CREATE } from 'react-admin';
 
+const SnapshotFlag = Symbol('snapshot');
+
+export SnapshotFlag;
+
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -172,7 +176,7 @@ const getOne = async (params, resourceName, resourceData) => {
       .collection(resourceName)
       .doc(params.id);
     
-    if (params.snaphost) return query;
+    if (params[SnapshotFlag]) return query;
     
     const result = await query.get();
 
@@ -212,7 +216,7 @@ const getList = async (params, resourceName, resourceData) => {
     
     Object.keys(params.filter).forEach(field => {query.where(field, '==', params.filter[field])})
     
-    if (params.snaphost) return query;
+    if (params[SnapshotFlag]) return query;
     
     let snapshots = await query.get()
 
@@ -238,6 +242,8 @@ const getMany = async (params, resourceName, resourceData) => {
   const firestore = firabase.firestore()
   
   const snapshot = await firestore.getAll(...params.ids.map(id => {firestore.collection(resourceName).doc(id)}))
+  
+  if (params[SnapshotFlag]) return snapshot;
   
   snapshot.forEach(docRef => {data.push(docRef.data())})
   
