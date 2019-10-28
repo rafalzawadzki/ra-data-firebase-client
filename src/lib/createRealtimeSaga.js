@@ -8,9 +8,14 @@ const observeRequest = dataProvider => (type, resource, params) => {
             params.snapshot = true;
           
             const query = dataProvider(type, resource, params);
-            const cancelSnapshots = query.onSnapshot(snaphot => {
-              observer.next(snapshot.docs)// New data received, notify the observer
-            })
+            const cancelSnapshots = query.onSnapshot(
+              snaphot => {
+                observer.next(snapshot.docs)// New data received, notify the observer
+              },
+              error => {
+                observer.error(error)); // Ouch, an error occured, notify the observer
+              }
+            )
 
             const subscription = {
                 unsubscribe() {
