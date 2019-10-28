@@ -5,6 +5,8 @@ const observeRequest = dataProvider => (type, resource, params) => {
     return {
         subscribe(observer) {
         
+            params.snapshot = true;
+          
             const query = dataProvider(type, resource, params);
             const cancelSnapshots = query.onSnapshot(snaphot => {
               observer.next(snapshot.docs)// New data received, notify the observer
