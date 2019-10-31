@@ -38,7 +38,7 @@ export const ArticleCreate = props => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="title" />
-      <ImageInput source="image" label="Related Image" accept="image/*" multiple>
+      <ImageInput source="thumbnail" label="Thumbnail" accept="image/*" multiple={false}>
         <ImageField source="src" title="title" />
       </ImageInput>
     </SimpleForm>
