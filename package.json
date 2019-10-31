@@ -1,6 +1,6 @@
 {
   "name": "ra-data-firestore-client",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Firestore Data Provider for react-admin",
   "main": "src/lib/index.js",
   "jsnext:main": "es/index.js",
@@ -27,7 +27,8 @@
     "demo": "node scripts/start.js",
     "init": "npm run build && npm link && npm link ra-data-firestore-client",
     "reset": "rm -rf node_modules && rm -rf package-lock.json && npm install && npm run init",
-    "start": "concurrently --kill-others \"npm run build:watch\" \"npm run app-start\""
+    "start": "concurrently --kill-others \"npm run build:watch\" \"npm run demo\"",
+    "dev":"react-scripts start"
   },
   "author": "Rafal Zawadzki <iam@rafalzawadzki.com> (http://rafalzawadzki.com/)",
   "license": "ISC",

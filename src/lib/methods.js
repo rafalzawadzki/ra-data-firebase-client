@@ -3,7 +3,7 @@ import 'firebase/firestore';
 import 'firebase/storage';
 import sortBy from 'sort-by';
 import { CREATE } from 'react-admin';
-
+/*
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -40,7 +40,7 @@ const addUploadFeature = requestHandler => (type, resource, params) => {
   // for other request types and reources, fall back to the defautl request handler
   return requestHandler(type, resource, params);
 };
-
+*/
 const getImageSize = file => {
   return new Promise(resolve => {
     const img = document.createElement('img');
@@ -266,7 +266,9 @@ export default {
   getOne,
   getList,
   getMany,
-  getManyReference,
-  addUploadFeature,
-  convertFileToBase64
+  getManyReference
+  // addUploadFeature,
+  // convertFileToBase64,
+  // storageUploadFeature,
+  // uploadFileToStorage
 };

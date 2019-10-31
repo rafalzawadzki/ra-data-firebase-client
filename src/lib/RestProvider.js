@@ -34,6 +34,9 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
   }
 
+  // const storage = firebase.storage();
+  // const storageRoot = storage.ref();
+
   /* Functions */
   const upload = options.upload || Methods.upload;
   const save = options.save || Methods.save;

@@ -1,4 +1,4 @@
-const convertFileToBase64 = file =>
+const uploadFileToStorage = file =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file.rawFile);
@@ -7,13 +7,13 @@ const convertFileToBase64 = file =>
     reader.onerror = reject;
   });
 
-const addUploadFeature = requestHandler => (type, resource, params) => {
+const storageUploadFeature = requestHandler => (type, resource, params) => {
   if (type === 'UPDATE' || type === 'CREATE') {
     if (params.data.image && params.data.image.length) {
       const formerPictures = params.data.image.filter(p => !(p.rawFile instanceof File));
       const newPictures = params.data.image.filter(p => p.rawFile instanceof File);
 
-      return Promise.all(newPictures.map(convertFileToBase64))
+      return Promise.all(newPictures.map(uploadFileToStorage))
         .then(base64Pictures =>
           base64Pictures.map(image64 => ({
             src: image64,
@@ -35,4 +35,4 @@ const addUploadFeature = requestHandler => (type, resource, params) => {
   return requestHandler(type, resource, params);
 };
 
-export default addUploadFeature;
+export default storageUploadFeature;

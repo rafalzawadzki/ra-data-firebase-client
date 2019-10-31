@@ -12,42 +12,35 @@ import {
   ImageField
 } from 'react-admin';
 
-export const UserList = props => (
-  <List title="All users" {...props}>
+export const ArticleList = props => (
+  <List {...props}>
     <Datagrid>
       <TextField source="id" />
-      <TextField source="name" />
-      <TextField source="username" />
-      <TextField source="email" />
+      <TextField source="title" />
       <EditButton />
     </Datagrid>
   </List>
 );
 
-export const UserCreate = props => (
-  <Create {...props}>
-    <SimpleForm>
-      <TextInput source="id" />
-      <TextInput source="name" />
-      <TextInput source="username" />
-      <TextInput source="email" />
-      <ImageInput source="image" label="Related Image" accept="image/*" multiple>
-        <ImageField source="src" title="title" />
-      </ImageInput>
-    </SimpleForm>
-  </Create>
-);
-
-export const UserEdit = props => (
+export const ArticleEdit = props => (
   <Edit {...props}>
     <SimpleForm>
-      <TextInput source="id" />
-      <TextInput source="name" />
-      <TextInput source="username" />
-      <TextInput source="email" />
+      <TextInput disabled source="id" />
+      <TextInput source="title" />
       <ImageInput source="image" label="Related Image" accept="image/*" multiple>
         <ImageField source="src" title="title" />
       </ImageInput>
     </SimpleForm>
   </Edit>
+);
+
+export const ArticleCreate = props => (
+  <Create {...props}>
+    <SimpleForm>
+      <TextInput source="title" />
+      <ImageInput source="image" label="Related Image" accept="image/*" multiple>
+        <ImageField source="src" title="title" />
+      </ImageInput>
+    </SimpleForm>
+  </Create>
 );
