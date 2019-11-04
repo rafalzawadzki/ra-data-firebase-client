@@ -1,3 +1,23 @@
+const addUploadFeature = requestHandler => async (type, resource, params) => {
+  if (type === 'UPDATE' || type === 'CREATE') {
+    let newParams = {};
+    for (const [key, value] of Object.entries(params.data)) {
+      if (Array.isArray(value)) {
+        newParams[key] = await convertToArrayOfBase64Objects(value);
+      }
+      if (value && value.rawFile instanceof File) {
+        newParams[key] = await convertToBase64Object(value);
+      }
+    }
+
+    params.data = {
+      ...params.data,
+      ...newParams
+    };
+  }
+  return requestHandler(type, resource, params);
+};
+
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -7,32 +27,19 @@ const convertFileToBase64 = file =>
     reader.onerror = reject;
   });
 
-const addUploadFeature = requestHandler => (type, resource, params) => {
-  if (type === 'UPDATE') {
-    if (params.data.image && params.data.image.length) {
-      const formerPictures = params.data.image.filter(p => !(p.rawFile instanceof File));
-      const newPictures = params.data.image.filter(p => p.rawFile instanceof File);
+const convertToBase64Object = async file => {
+  return {
+    src: await convertFileToBase64(file),
+    title: `${file.title}`
+  };
+};
 
-      return Promise.all(newPictures.map(convertFileToBase64))
-        .then(base64Pictures =>
-          base64Pictures.map(image64 => ({
-            src: image64,
-            title: `${params.data.title}`
-          }))
-        )
-        .then(transformedNewPictures =>
-          requestHandler(type, resource, {
-            ...params,
-            data: {
-              ...params.data,
-              image: [...transformedNewPictures, ...formerPictures]
-            }
-          })
-        );
-    }
-  }
-  // for other request types and reources, fall back to the defautl request handler
-  return requestHandler(type, resource, params);
+const convertToArrayOfBase64Objects = async array => {
+  const formerFields = array.filter(p => !(p.rawFile instanceof File));
+  const newFiles = array.filter(p => p.rawFile instanceof File);
+  const transformedNewFiles = await Promise.all(newFiles.map(convertToBase64Object));
+
+  return [...transformedNewFiles, ...formerFields];
 };
 
 export default addUploadFeature;
