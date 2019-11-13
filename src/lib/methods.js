@@ -3,9 +3,7 @@ import 'firebase/firestore';
 import 'firebase/storage';
 import { CREATE } from 'react-admin';
 
-const SnapshotFlag = Symbol('snapshot');
-
-export SnapshotFlag;
+const snapshotFlag = Symbol('snapshot');
 
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
@@ -170,14 +168,13 @@ const getItemID = (params, type, resourceName, resourcePath, resourceData) => {
 
 const getOne = async (params, resourceName, resourceData) => {
   if (params.id) {
-    
     const query = firebase
       .firestore()
       .collection(resourceName)
       .doc(params.id);
-    
-    if (params[SnapshotFlag]) return query;
-    
+
+    if (params[snapshotFlag]) return query;
+
     const result = await query.get();
 
     if (result.exists) {
@@ -205,22 +202,25 @@ const getOne = async (params, resourceName, resourceData) => {
 const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
     let values = [];
-    
-    const query = firebase
-        .firestore()
-        .collection(resourceName)
-        .limit(params.pagination.perPage)
-        .offset(params.pagination.perPage * params.pagination.page);
-    
-    if (params.sort) query.orderBy(params.sort.field, params.sort.order.toLower())
-    
-    Object.keys(params.filter).forEach(field => {query.where(field, '==', params.filter[field])})
-    
-    if (params[SnapshotFlag]) return query;
-    
-    let snapshots = await query.get()
 
-    for (const snapshot of snapshots.docs) {
+    let query = firebase
+      .firestore()
+      .collection(resourceName)
+      .limit(params.pagination.perPage * params.pagination.page);
+
+    if (params.sort) query = query.orderBy(params.sort.field, params.sort.order.toLowerCase());
+
+    Object.keys(params.filter).forEach(field => {
+      query = query.where(field, '==', params.filter[field]);
+    });
+
+    if (params[snapshotFlag]) return query;
+
+    let snapshots = await query.get();
+
+    const docs = snapshots.docs.slice(params.pagination.perPage * (params.pagination.page - 1));
+
+    for (const snapshot of docs) {
       const data = snapshot.data();
       if (data && data.id == null) {
         data['id'] = snapshot.id;
@@ -230,7 +230,7 @@ const getList = async (params, resourceName, resourceData) => {
 
     const keys = values.map(i => i.id);
 
-    return { values, keys, values.length };
+    return { data: values, keys, total: values.length };
   } else {
     throw new Error('Error processing request');
   }
@@ -238,15 +238,19 @@ const getList = async (params, resourceName, resourceData) => {
 
 const getMany = async (params, resourceName, resourceData) => {
   let data = [];
-  
-  const firestore = firabase.firestore()
-  
-  const snapshot = await firestore.getAll(...params.ids.map(id => {firestore.collection(resourceName).doc(id)}))
-  
-  if (params[SnapshotFlag]) return snapshot;
-  
-  snapshot.forEach(docRef => {data.push(docRef.data())})
-  
+
+  const firestore = firebase.firestore();
+
+  const snapshot = await firestore.getAll(
+    ...params.ids.map(id => {
+      firestore.collection(resourceName).doc(id);
+    })
+  );
+
+  snapshot.forEach(docRef => {
+    data.push(docRef.data());
+  });
+
   return { data };
 };
 
@@ -272,5 +276,6 @@ export default {
   getMany,
   getManyReference,
   addUploadFeature,
-  convertFileToBase64
+  convertFileToBase64,
+  snapshotFlag
 };

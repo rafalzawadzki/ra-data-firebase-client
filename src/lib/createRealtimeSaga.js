@@ -1,35 +1,49 @@
 import realtimeSaga from 'ra-realtime';
-import { SnapshotFlag } from './methods.js';
+import Methods from './methods.js';
 
 const observeRequest = dataProvider => (type, resource, params) => {
-   
-    return {
-        subscribe(observer) {
-        
-            params[SnapshotFlag] = true;
-          
-            const query = dataProvider(type, resource, params);
-            const cancelSnapshots = query.onSnapshot(
-              snaphot => {
-                observer.next(snapshot.docs)// New data received, notify the observer
-              },
-              error => {
-                observer.error(error)); // Ouch, an error occured, notify the observer
-              }
-            )
+  return {
+    subscribe(observer) {
+      const snapshotParams = Object.assign({}, params);
 
-            const subscription = {
-                unsubscribe() {
-                    // Clean up after ourselves
-                    cancelSnapshots();
-                    // Notify the saga that we cleaned up everything
-                    observer.complete();
-                }
-            };
+      snapshotParams[Methods.snapshotFlag] = true;
 
-            return subscription;
-        },
-    };
+      const cancelSnapshotsPromise = dataProvider(type, resource, snapshotParams).then(query => {
+        return query.onSnapshot(
+          snapshot => {
+            // New data received, notify the observer
+            if (snapshot.docs) {
+              const docs = snapshot.docs.slice(params.pagination.perPage * (params.pagination.page - 1));
+
+              observer.next({
+                data: docs.map(doc => doc.data()),
+                keys: docs.map(doc => doc.id),
+                total: docs.length
+              });
+            } else {
+              observer.next({ data: snapshot.data() });
+            }
+          },
+          error => {
+            observer.error(error); // Ouch, an error occured, notify the observer
+          }
+        );
+      });
+
+      const subscription = {
+        unsubscribe() {
+          // Clean up after ourselves
+          cancelSnapshotsPromise.then(cancelSnapshots => {
+            cancelSnapshots();
+            // Notify the saga that we cleaned up everything
+            observer.complete();
+          });
+        }
+      };
+
+      return subscription;
+    }
+  };
 };
 
 export default dataProvider => realtimeSaga(observeRequest(dataProvider));
