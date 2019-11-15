@@ -14,11 +14,20 @@ import {
   SimpleForm,
   TextInput,
   ImageInput,
-  ImageField
+  ImageField,
+    Filter
 } from 'react-admin';
 
+import Pagination from '../lib/Pagination';
+
+const PostListFilter = props => (
+    <Filter {...props}>
+      <TextInput label="test" source=" .price>"/>
+    </Filter>
+);
+
 export const PostList = props => (
-  <List {...props}>
+  <List {...props} pagination={<Pagination/>} filters={<PostListFilter/>}>
     <Datagrid>
       <TextField source="id" />
       <ReferenceField label="User" source="userId" reference="users" allowEmpty>
@@ -58,3 +67,25 @@ export const PostCreate = props => (
     </SimpleForm>
   </Create>
 );
+
+/*
+MACRO:
+PIB
+TX JUROS
+CONSUMO
+DEFICIT PUBLICO
+CAMBIO
+EMPREGO
+INFLACAO
+
+SETORIAL:
+
+BALANCA DE PAGAMENTOS
+PAUTA DE IN/OUT
+
+CONTABILIDADE SA'S
+
+EXTRATIVISTA
+MINERAL
+PAPEL-CELULOSE
+*/

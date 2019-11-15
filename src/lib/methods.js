@@ -1,7 +1,8 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/storage';
-import { CREATE } from 'react-admin';
+import { CREATE, changeListParams } from 'react-admin';
+import flatten from 'flat';
 
 const snapshotFlag = Symbol('snapshot');
 
@@ -199,38 +200,101 @@ const getOne = async (params, resourceName, resourceData) => {
  * filter: { author_id: 12 }
  */
 
+const listCache = {};
+
 const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
     let values = [];
 
-    let query = firebase
-      .firestore()
-      .collection(resourceName)
-      .limit(params.pagination.perPage * params.pagination.page);
+    console.log(listCache);
+    let query = firebase.firestore();
 
-    if (params.sort) query = query.orderBy(params.sort.field, params.sort.order.toLowerCase());
+    if (resourceName.startsWith('.')) {
+      query = query.collectionGroup(resourceName.substring(1))
+    } else {
+      query = query.collection(resourceName)
+    }
 
-    Object.keys(params.filter).forEach(field => {
-      query = query.where(field, '==', params.filter[field]);
+    query = query.limit(params.pagination.perPage + 1);//+1 to know if there is next page
+
+    console.log(params.filter);
+    params.filter = flatten(params.filter);
+    console.log(params.filter);
+
+    Object.keys(params.filter).forEach(rawField => {
+
+      let op = '==';
+      let field = rawField;
+      console.log(op);
+      console.log(field);
+
+      if (rawField.startsWith(' .')) {
+        if (rawField.endsWith('<')) {
+          op = "<";
+          field = rawField.slice(2, -'<'.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('<=')) {
+          op = "<=";
+          field = rawField.slice(2, -'<='.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('==')) {
+          op = "==";
+          field = rawField.slice(2, -'=='.length);
+        } else if (rawField.endsWith('>')) {
+          op = ">";
+          field = rawField.slice(2, -'>'.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('>=')) {
+          op = ">=";
+          field = rawField.slice(2, -'>='.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith(':array-contains')) {
+          op = "array-contains";
+          field = rawField.slice(2, -':array-contains'.length);
+        }
+      }
+
+      console.log(op);
+      console.log(field);
+
+      query = query.where(field, op, params.filter[rawField]);
     });
+
+    // if (params.sort) query = query.orderBy(params.sort.field, params.sort.order.toLowerCase());
+
+    if (params.pagination.page > 1) {
+
+      const startAt = listCache[resourceName];
+
+      if (startAt) {
+        query = query.startAt(startAt);
+      } else {
+
+        params.pagination.page = 1;
+
+        changeListParams(resourceName, params);//how to dispatch this?
+        return {data: [], total: 0}
+      }
+    }
 
     if (params[snapshotFlag]) return query;
 
     let snapshots = await query.get();
 
-    const docs = snapshots.docs.slice(params.pagination.perPage * (params.pagination.page - 1));
-
-    for (const snapshot of docs) {
+    for (const snapshot of snapshots.docs.slice(0, params.pagination.perPage)) {
       const data = snapshot.data();
       if (data && data.id == null) {
         data['id'] = snapshot.id;
       }
+      if (resourceName.startsWith('.')) {
+        data['.path'] = snapshot.ref.path
+      }
       values.push(data);
     }
 
-    const keys = values.map(i => i.id);
-
-    return { data: values, keys, total: values.length };
+    listCache[resourceName] = snapshots.docs.pop();
+    
+    return { data: values, total: snapshots.docs.length };
   } else {
     throw new Error('Error processing request');
   }

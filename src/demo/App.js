@@ -39,8 +39,8 @@ const dataProvider = base64Uploader(RestProvider(firebaseConfig, { trackedResour
 const realtimeSaga = createRealtimeSaga(dataProvider);
 
 const App = () => (
-  <Admin dataProvider={dataProvider} customSagas={[realtimeSaga]}>
-    <Resource name="posts" list={PostList} edit={PostEdit} create={PostCreate} />
+  <Admin dataProvider={dataProvider} customSagas={[]}>
+    <Resource name=".posts" list={PostList} edit={PostEdit} create={PostCreate} />
     <Resource name="users" list={UserList} edit={UserEdit} create={UserCreate} />
   </Admin>
 );
