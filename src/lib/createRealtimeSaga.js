@@ -54,4 +54,4 @@ const observeRequest = (dataProvider, onDataUpdated = () => {}) => (type, resour
   };
 };
 
-export default dataProvider => realtimeSaga(observeRequest(dataProvider));
+export default (dataProvider, onDataUpdated) => realtimeSaga(observeRequest(dataProvider, onDataUpdated));
