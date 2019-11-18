@@ -13,24 +13,34 @@ const observeRequest = (dataProvider, onDataUpdated) => (type, resource, params)
       const cancelSnapshotsPromise = dataProvider(type, resource, snapshotParams).then(query => {
         return query.onSnapshot(
           snapshot => {
-
             if (!isFirst) {
-              isFirst = false;
+              if (onDataUpdated) onDataUpdated(type, resource);
+
+              // New data received, notify the observer
+              if (snapshot.docs) {
+                const docs = snapshot.docs.slice(params.pagination.perPage * (params.pagination.page - 1));
+
+                observer.next({
+                  data: docs.map(doc => {
+                    const data = doc.data();
+
+                    data.id = data.id || doc.id;
+
+                    return data
+                  }),
+                  total: docs.length
+                });
+              } else {
+
+                const data = snapshot.data();
+
+                data.id = data.id || snapshot.id;
+
+                observer.next({ data });
+              }
             }
 
-            if (onDataUpdated) onDataUpdated(type, resource);
-
-            // New data received, notify the observer
-            if (snapshot.docs) {
-              const docs = snapshot.docs.slice(params.pagination.perPage * (params.pagination.page - 1));
-
-              observer.next({
-                data: docs.map(doc => doc.data()),
-                total: docs.length
-              });
-            } else {
-              observer.next({ data: snapshot.data() });
-            }
+            isFirst = false;
           },
           error => {
             observer.error(error); // Ouch, an error occured, notify the observer
