@@ -1,7 +1,7 @@
 import realtimeSaga from 'ra-realtime';
 import Methods from './methods.js';
 
-const observeRequest = (dataProvider, onDataUpdated = () => {}) => (type, resource, params) => {
+const observeRequest = (dataProvider, onDataUpdated) => (type, resource, params) => {
   return {
     subscribe(observer) {
       const snapshotParams = Object.assign({}, params);
@@ -18,7 +18,7 @@ const observeRequest = (dataProvider, onDataUpdated = () => {}) => (type, resour
               isFirst = false;
             }
 
-            onDataUpdated(type, resource);
+            if (onDataUpdated) onDataUpdated(type, resource);
 
             // New data received, notify the observer
             if (snapshot.docs) {

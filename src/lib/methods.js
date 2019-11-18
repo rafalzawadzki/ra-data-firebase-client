@@ -303,15 +303,11 @@ const getList = async (params, resourceName, resourceData) => {
 const getMany = async (params, resourceName, resourceData) => {
   let data = [];
 
-  const firestore = firebase.firestore();
+  const collection = firebase.firestore().collection(resourceName);
 
-  const snapshot = await firestore.getAll(
-    ...params.ids.map(id => {
-      firestore.collection(resourceName).doc(id);
-    })
-  );
+  const snapshots = await Promise.all(params.ids.map(id => collection.doc(id).get()));
 
-  snapshot.forEach(docRef => {
+  snapshots.forEach(docRef => {
     data.push(docRef.data());
   });
 
