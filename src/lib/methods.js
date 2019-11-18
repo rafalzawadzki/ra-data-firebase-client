@@ -308,7 +308,12 @@ const getMany = async (params, resourceName, resourceData) => {
   const snapshots = await Promise.all(params.ids.map(id => collection.doc(id).get()));
 
   snapshots.forEach(docRef => {
-    data.push(docRef.data());
+
+    const doc = docRef.data();
+
+    doc.id = doc.id || docRef.id;
+
+    data.push(doc);
   });
 
   return { data };
