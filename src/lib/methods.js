@@ -1,8 +1,10 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/storage';
-import sortBy from 'sort-by';
-import { CREATE } from 'react-admin';
+import { CREATE, changeListParams } from 'react-admin';
+import flatten from 'flat';
+
+const snapshotFlag = Symbol('snapshot');
 
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
@@ -167,11 +169,14 @@ const getItemID = (params, type, resourceName, resourcePath, resourceData) => {
 
 const getOne = async (params, resourceName, resourceData) => {
   if (params.id) {
-    let result = await firebase
+    const query = firebase
       .firestore()
       .collection(resourceName)
-      .doc(params.id)
-      .get();
+      .doc(params.id);
+
+    if (params[snapshotFlag]) return query;
+
+    const result = await query.get();
 
     if (result.exists) {
       const data = result.data();
@@ -195,44 +200,101 @@ const getOne = async (params, resourceName, resourceData) => {
  * filter: { author_id: 12 }
  */
 
+const listCache = {};
+
 const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
     let values = [];
-    let snapshots = await firebase
-      .firestore()
-      .collection(resourceName)
-      .get();
 
-    for (const snapshot of snapshots.docs) {
+    console.log(listCache);
+    let query = firebase.firestore();
+
+    if (resourceName.startsWith('.')) {
+      query = query.collectionGroup(resourceName.substring(1))
+    } else {
+      query = query.collection(resourceName)
+    }
+
+    query = query.limit(params.pagination.perPage + 1);//+1 to know if there is next page
+
+    console.log(params.filter);
+    params.filter = flatten(params.filter);
+    console.log(params.filter);
+
+    Object.keys(params.filter).forEach(rawField => {
+
+      let op = '==';
+      let field = rawField;
+      console.log(op);
+      console.log(field);
+
+      if (rawField.startsWith(' .')) {
+        if (rawField.endsWith('<')) {
+          op = "<";
+          field = rawField.slice(2, -'<'.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('<=')) {
+          op = "<=";
+          field = rawField.slice(2, -'<='.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('==')) {
+          op = "==";
+          field = rawField.slice(2, -'=='.length);
+        } else if (rawField.endsWith('>')) {
+          op = ">";
+          field = rawField.slice(2, -'>'.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith('>=')) {
+          op = ">=";
+          field = rawField.slice(2, -'>='.length);
+          query = query.orderBy(field)
+        } else if (rawField.endsWith(':array-contains')) {
+          op = "array-contains";
+          field = rawField.slice(2, -':array-contains'.length);
+        }
+      }
+
+      console.log(op);
+      console.log(field);
+
+      query = query.where(field, op, params.filter[rawField]);
+    });
+
+    // if (params.sort) query = query.orderBy(params.sort.field, params.sort.order.toLowerCase());
+
+    if (params.pagination.page > 1) {
+
+      const startAt = listCache[resourceName];
+
+      if (startAt) {
+        query = query.startAt(startAt);
+      } else {
+
+        params.pagination.page = 1;
+
+        changeListParams(resourceName, params);//how to dispatch this?
+        return {data: [], total: 0}
+      }
+    }
+
+    if (params[snapshotFlag]) return query;
+
+    let snapshots = await query.get();
+
+    for (const snapshot of snapshots.docs.slice(0, params.pagination.perPage)) {
       const data = snapshot.data();
       if (data && data.id == null) {
         data['id'] = snapshot.id;
       }
+      if (resourceName.startsWith('.')) {
+        data['.path'] = snapshot.ref.path
+      }
       values.push(data);
     }
 
-    if (params.filter) {
-      values = values.filter(item => {
-        let meetsFilters = true;
-        for (const key of Object.keys(params.filter)) {
-          meetsFilters = item[key] === params.filter[key];
-        }
-        return meetsFilters;
-      });
-    }
-
-    if (params.sort) {
-      values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
-    }
-
-    const keys = values.map(i => i.id);
-    const { page, perPage } = params.pagination;
-    const _start = (page - 1) * perPage;
-    const _end = page * perPage;
-    const data = values ? values.slice(_start, _end) : [];
-    const ids = keys.slice(_start, _end) || [];
-    const total = values ? values.length : 0;
-    return { data, ids, total };
+    listCache[resourceName] = snapshots.docs.pop();
+    
+    return { data: values, total: snapshots.docs.length };
   } else {
     throw new Error('Error processing request');
   }
@@ -240,11 +302,20 @@ const getList = async (params, resourceName, resourceData) => {
 
 const getMany = async (params, resourceName, resourceData) => {
   let data = [];
-  /* eslint-disable no-await-in-loop */
-  for (const id of params.ids) {
-    let { data: item } = await getOne({ id }, resourceName, resourceData);
-    data.push(item);
-  }
+
+  const collection = firebase.firestore().collection(resourceName);
+
+  const snapshots = await Promise.all(params.ids.map(id => collection.doc(id).get()));
+
+  snapshots.forEach(docRef => {
+
+    const doc = docRef.data();
+
+    doc.id = doc.id || docRef.id;
+
+    data.push(doc);
+  });
+
   return { data };
 };
 
@@ -270,5 +341,6 @@ export default {
   getMany,
   getManyReference,
   addUploadFeature,
-  convertFileToBase64
+  convertFileToBase64,
+  snapshotFlag
 };

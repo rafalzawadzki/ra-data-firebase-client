@@ -12,8 +12,10 @@ import {
   ImageField
 } from 'react-admin';
 
+import Pagination from '../lib/Pagination';
+
 export const UserList = props => (
-  <List title="All users" {...props}>
+  <List title="All users" {...props} pagination={<Pagination />}>
     <Datagrid>
       <TextField source="id" />
       <TextField source="name" />
