@@ -214,15 +214,14 @@ const getList = async (params, resourceName, tag) => {
      if(params.filter.sort == "releasedate") {
       const field = 'releasedate';
       fb = fb.where(field, '<=', params.filter.created._d);
-
-
+      console.log("this is the query", fb);
     } else if (params.filter) {
       const fields = Object.keys(params.filter);
       for (let i = 0; i < fields.length; i++) {
         const field = fields[i];
         fb = fb.where(field, '==', params.filter[field]);
       }
-    }
+  
     fb = fb.orderBy(field, order);
     if (page > lastPage && last) {
       fb = fb.startAfter(last);
@@ -231,6 +230,7 @@ const getList = async (params, resourceName, tag) => {
     } else if (last) {
       fb = fb.startAt(first);
     }
+  }
     let snapshots = await fb.limit(perPage).get();
     let lastitem = {};
     for (const snapshot of snapshots.docs) {
