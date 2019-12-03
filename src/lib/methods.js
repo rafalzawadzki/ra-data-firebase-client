@@ -195,6 +195,7 @@ let firstPageIX = {};
 let lastPageIX = {};
 let paginationPage = {};
 
+
 const getList = async (params, resourceName, tag) => {
   //  handles get list requests from dataProvider in uduX admin-portal
   if (params.pagination) {
@@ -207,8 +208,15 @@ const getList = async (params, resourceName, tag) => {
     const first = firstPageIX[IXName];
     const last = lastPageIX[IXName];
     const lastPage = paginationPage[IXName] || 1;
+
     let fb = firebase.firestore().collection(resourceName);
-    if (params.filter) {
+     // checks if the property on the incoming parameter from dataProvider has value releasedate
+     if(params.filter.sort == "releasedate") {
+      const field = 'releasedate';
+      fb = fb.where(field, '<=', params.filter.created._d);
+
+
+    } else if (params.filter) {
       const fields = Object.keys(params.filter);
       for (let i = 0; i < fields.length; i++) {
         const field = fields[i];
