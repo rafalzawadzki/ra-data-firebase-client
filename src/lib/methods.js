@@ -1,7 +1,6 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/storage';
-import sortBy from 'sort-by';
 import { CREATE } from 'react-admin';
 
 const convertFileToBase64 = file =>
@@ -44,7 +43,7 @@ const addUploadFeature = requestHandler => (type, resource, params) => {
 const getImageSize = file => {
   return new Promise(resolve => {
     const img = document.createElement('img');
-    img.onload = function () {
+    img.onload = function() {
       resolve({
         width: this.width,
         height: this.height
@@ -63,7 +62,7 @@ const upload = async (fieldName, submitedData, id, resourceName, resourcePath) =
     const ref = firebase
       .storage()
       .ref()
-      .child(`${resourcePath||resourceName}/${id}/${fieldName}`);
+      .child(`${resourcePath || resourceName}/${id}/${fieldName}`);
     const snapshot = await ref.put(rawFile);
     result[fieldName] = [{}];
     result[fieldName][0].uploadedAt = new Date();
@@ -99,15 +98,15 @@ const save = async (
   }
 
   if (isNew) {
-    Object.assign(data, { [timestampFieldNames.createdAt]: (new Date()).getTime() });
+    Object.assign(data, { [timestampFieldNames.createdAt]: new Date().getTime() });
   }
 
-  data = Object.assign(previous, { [timestampFieldNames.updatedAt]:(new Date()).getTime()}, data);
+  data = Object.assign(previous, { [timestampFieldNames.updatedAt]: new Date().getTime() }, data);
 
   if (!data.id) {
     data.id = id;
   }
-  
+
   await firebase
     .firestore()
     .doc(`${resourceName}/${data.id}`)
@@ -121,7 +120,7 @@ const del = async (id, resourceName, resourcePath, uploadFields) => {
       firebase
         .storage()
         .ref()
-        .child(`${resourcePath||resourceName}/${id}/${fieldName}`)
+        .child(`${resourcePath || resourceName}/${id}/${fieldName}`)
         .delete()
     );
   }
@@ -192,62 +191,62 @@ const getOne = async (params, resourceName, resourceData) => {
  * sort: { field: 'title', order: 'ASC' },
  * filter: { author_id: 12 }
  */
-let firstPageIX = {}
-let lastPageIX = {}
-let paginationPage = {}
+let firstPageIX = {};
+let lastPageIX = {};
+let paginationPage = {};
 
-const getList = async (params, resourceName, resourceData, tag) => {
+const getList = async (params, resourceName, tag) => {
+  //  handles get list requests from dataProvider in uduX admin-portal
   if (params.pagination) {
-    const perPage = 100
-    const {page} = params.pagination
+    const perPage = 100;
+    const { page } = params.pagination;
     let values = [];
-    const field = "created", order = "desc"
-    const IXName = `${resourceName}${tag||""}`
-    const first = firstPageIX[IXName]
-    const last = lastPageIX[IXName]
-    const lastPage = paginationPage[IXName] || 1
-    let fb = firebase
-      .firestore()
-      .collection(resourceName)
-    if (params.filter){
-      const fields = Object.keys(params.filter)
+    const field = 'created';
+    const order = 'desc';
+    const IXName = `${resourceName}${tag || ''}`;
+    const first = firstPageIX[IXName];
+    const last = lastPageIX[IXName];
+    const lastPage = paginationPage[IXName] || 1;
+    let fb = firebase.firestore().collection(resourceName);
+    if (params.filter) {
+      const fields = Object.keys(params.filter);
       for (let i = 0; i < fields.length; i++) {
         const field = fields[i];
-        fb = fb.where(field, "==", params.filter[field])
+        fb = fb.where(field, '==', params.filter[field]);
       }
     }
-    fb = fb.orderBy(field, order)
-    if ((page > lastPage) && last) {
-      fb = fb.startAfter(last)
-    } else if ((page < lastPage) && first) {
-      fb = fb.endBefore(first)
-    } else if (last){
-      fb = fb.startAt(first)
+    fb = fb.orderBy(field, order);
+    if (page > lastPage && last) {
+      fb = fb.startAfter(last);
+    } else if (page < lastPage && first) {
+      fb = fb.endBefore(first);
+    } else if (last) {
+      fb = fb.startAt(first);
     }
-    let snapshots = await fb.limit(perPage)
-      .get();
-    let lastitem = {}
+    let snapshots = await fb.limit(perPage).get();
+    let lastitem = {};
     for (const snapshot of snapshots.docs) {
       const data = snapshot.data();
       if (data && data.id == null) {
         data['id'] = snapshot.id;
       }
       values.push(data);
-      lastitem = data
+      lastitem = data;
     }
-    paginationPage[IXName] = page
-    lastPageIX[IXName] = lastitem[field]
-    firstPageIX[IXName] = values.length > 0 ? values[0][field] : null 
+    paginationPage[IXName] = page;
+    lastPageIX[IXName] = lastitem[field];
+    firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
 
-    console.log(IXName, "page", page, "lastPage", lastPage, "last", last , "first", first, values)
+    console.log(IXName, 'page', page, 'lastPage', lastPage, 'last', last, 'first', first, values);
     // if (params.sort) {
     //   values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
     // }
-    const _start = 0, _end = values.length
+    const _start = 0;
+    const _end = values.length;
     const keys = values.map(i => i.id);
     const data = values ? values.slice(_start, _end) : [];
     const ids = keys.slice(_start, _end) || [];
-    const total = 100000000000//values ? values.length : 0;
+    const total = 100000000000; // values ? values.length : 0;
     return { data, ids, total };
   } else {
     throw new Error('Error processing request');
@@ -268,7 +267,7 @@ const getManyReference = async (params, resourceName, resourceData) => {
   if (params.target) {
     if (!params.filter) params.filter = {};
     params.filter[params.target] = params.id;
-    let { data, total } = await getList(params, resourceName, resourceData, "MANY_REFERENCE");
+    let { data, total } = await getList(params, resourceName, resourceData, 'MANY_REFERENCE');
     return { data, total };
   } else {
     throw new Error('Error processing request');

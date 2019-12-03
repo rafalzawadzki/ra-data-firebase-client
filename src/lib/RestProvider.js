@@ -119,8 +119,8 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
             )
           : [];
-        const currentData = type === CREATE?{}:params.previousData//data.resourcesData[resourceName][itemId] || {};
-        const uploadResults = await Promise.all(uploads); 
+        const currentData = type === CREATE ? {} : params.previousData; //  data.resourcesData[resourceName][itemId] || {};
+        const uploadResults = await Promise.all(uploads);
         result = await save(
           itemId,
           params.data,
