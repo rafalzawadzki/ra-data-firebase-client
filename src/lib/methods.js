@@ -213,7 +213,7 @@ const getList = async (params, resourceName, tag) => {
      // checks if the property on the incoming parameter from dataProvider has value releasedate
      if(params.filter.releasedate) { // this line checks if params has a release date property
           const field = 'releasedate';
-          fb = fb.where(field, '<=', params.filter.created._d);
+          fb = fb.where(field, '<=', params.filter.releasedate._d);
      }
     let snapshots = await fb.limit(perPage).get();
     let lastitem = {};
