@@ -211,26 +211,50 @@ const getList = async (params, resourceName, tag) => {
 
     let fb = firebase.firestore().collection(resourceName);
      // checks if the property on the incoming parameter from dataProvider has value releasedate
-     if(params.filter.sort == "releasedate") {
-      const field = 'releasedate';
-      fb = fb.where(field, '<=', params.filter.created._d);
-      console.log("this is the query", fb);
-    } else if (params.filter) {
-      const fields = Object.keys(params.filter);
-      for (let i = 0; i < fields.length; i++) {
-        const field = fields[i];
-        fb = fb.where(field, '==', params.filter[field]);
+     if(params.filter.releasedate) { // this line checks if params has a release date property
+          const field = 'releasedate';
+          fb = fb.where(field, '<=', params.filter.created._d);
+     }
+    let snapshots = await fb.limit(perPage).get();
+    let lastitem = {};
+    for (const snapshot of snapshots.docs) {
+      const data = snapshot.data();
+      if (data && data.id == null) {
+        data['id'] = snapshot.id;
       }
-  
-    fb = fb.orderBy(field, order);
-    if (page > lastPage && last) {
-      fb = fb.startAfter(last);
-    } else if (page < lastPage && first) {
-      fb = fb.endBefore(first);
-    } else if (last) {
-      fb = fb.startAt(first);
+      values.push(data);
+      lastitem = data;
     }
-  }
+    paginationPage[IXName] = page;
+    lastPageIX[IXName] = lastitem[field];
+    firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
+
+    console.log(IXName, 'page', page, 'lastPage', lastPage, 'last', last, 'first', first, values);
+
+    const _start = 0;
+    const _end = values.length;
+    const keys = values.map(i => i.id);
+    const data = values ? values.slice(_start, _end) : [];
+    const ids = keys.slice(_start, _end) || [];
+    const total = 100000000000; // values ? values.length : 0;
+    return { data, ids, total };
+
+    } else if (params.filter) {
+          const fields = Object.keys(params.filter);
+          for (let i = 0; i < fields.length; i++) {
+            const field = fields[i];
+            fb = fb.where(field, '==', params.filter[field]);
+          }
+      
+        fb = fb.orderBy(field, order);
+        if (page > lastPage && last) {
+          fb = fb.startAfter(last);
+        } else if (page < lastPage && first) {
+          fb = fb.endBefore(first);
+        } else if (last) {
+          fb = fb.startAt(first);
+        }
+
     let snapshots = await fb.limit(perPage).get();
     let lastitem = {};
     for (const snapshot of snapshots.docs) {
