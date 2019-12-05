@@ -210,11 +210,16 @@ const getList = async (params, resourceName, tag) => {
     const lastPage = paginationPage[IXName] || 1;
 
     let fb = firebase.firestore().collection(resourceName);
-     // checks if the property on the incoming parameter from dataProvider has value releasedate
-     if(params.filter.releasedate) { // this line checks if params has a release date property
-          const field = 'releasedate';
-          fb = fb.where(field, '<=', params.filter.releasedate._d).orderBy(field, order);
-     }
+    // checks if the property on the incoming parameter from dataProvider has value releasedate
+    if (params.filter.releasedate._d === Number()) {
+      /**
+       * this line checks if params has a release date property
+       * and if that property is a number
+       * this was done because the sorting order of tracks was reverted
+       */
+      const field = 'releasedate';
+      fb = fb.where(field, '<=', params.filter.releasedate._d).orderBy(field, order);
+    }
     let snapshots = await fb.limit(perPage).get();
     let lastitem = {};
     for (const snapshot of snapshots.docs) {
