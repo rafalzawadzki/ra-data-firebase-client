@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/storage';
@@ -211,7 +212,7 @@ const getList = async (params, resourceName, tag) => {
 
     let fb = firebase.firestore().collection(resourceName);
     // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter.releasedate._d === Number()) {
+    if (params.filter.hasOwnProperty()) {
       /**
        * this line checks if params has a release date property
        * and if that property is a number
@@ -244,9 +245,10 @@ const getList = async (params, resourceName, tag) => {
     const total = 100000000000; // values ? values.length : 0;
     return { data, ids, total };
 
-    } else if (params.filter) {
+   } else if (params.filter) {
           const fields = Object.keys(params.filter);
           for (let i = 0; i < fields.length; i++) {
+            // eslint-disable-next-line prettier/prettier
             const field = fields[i];
             fb = fb.where(field, '==', params.filter[field]);
           }
