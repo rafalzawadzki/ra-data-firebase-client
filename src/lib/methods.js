@@ -4,13 +4,13 @@ import "firebase/firestore";
 import "firebase/storage";
 import { CREATE } from "react-admin";
 
-function isEmpty(obj) { // function for checking for empty objects
-    for(var key in obj) {
-        if(obj.hasOwnProperty(key))
-            return false;
-    }
-    return true;
-};
+// function isEmpty(obj) { // function for checking for empty objects
+//     for(var key in obj) {
+//         if(obj.hasOwnProperty(key))
+//             return false;
+//     }
+//     return true;
+// };
 
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {

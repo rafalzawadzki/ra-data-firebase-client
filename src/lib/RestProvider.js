@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
@@ -114,7 +115,9 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
         return result;
       case UPDATE:
       case CREATE:
+        // console.log('I HAVE BEEN CONVERTED TO AN UPDATE METHOD', type, resourceName, params);
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
+        // console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
