@@ -238,7 +238,7 @@ const getList = async (params, resourceName, tag) => {
 
     let fb = firebase.firestore().collection(resourceName);
     // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter !== undefined && params.filter.hasOwnProperty("releasedate")) {
+    if (params.filter.hasOwnProperty("releasedate")) {
       /**
        * this line checks if params has a release date property
        * and if that property is a number
