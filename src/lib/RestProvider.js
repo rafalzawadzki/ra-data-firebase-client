@@ -84,8 +84,8 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
     let result = null;
     switch (type) {
       case GET_LIST:
-        console.log('GET_LIST');
-        console.log('from ra-data-firestore-json ', type, resourceName, params);
+        // console.log('GET_LIST');
+        // console.log('from ra-data-firestore-json ', type, resourceName, params);
         result = await getList(params, resourceName, resourcesData[resourceName]);
         return result;
       case GET_MANY:
