@@ -246,7 +246,7 @@ const getList = async (params, resourceName, tag) => {
        */
       field = "releasedate";
       fb = fb
-        .where(field, "<=", params.filter.releasedate._d)
+        .where(field, "<=", params.filter.releasedate)
         .orderBy(field, order);
 
         let snapshots = await fb.limit(perPage).get();
