@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
@@ -19,7 +20,7 @@ const BaseConfiguration = {
   }
 };
 
-const RestProvider = (firebaseConfig = {}, options = {}) => {
+const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
   options = Object.assign({}, BaseConfiguration, options);
   const { timestampFieldNames, trackedResources } = options;
 
@@ -84,6 +85,7 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
     switch (type) {
       case GET_LIST:
         // console.log('GET_LIST');
+        console.log('from ra-data-firestore-json ', type, resourceName, params);
         result = await getList(params, resourceName, resourcesData[resourceName]);
         return result;
       case GET_MANY:
@@ -92,7 +94,7 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
         return result;
 
       case GET_MANY_REFERENCE:
-        // console.log('GET_MANY_REFERENCE');
+        // console.l og('GET_MANY_REFERENCE');
         result = await getManyReference(params, resourceName, resourcesData[resourceName]);
         return result;
 
@@ -113,14 +115,16 @@ const RestProvider = (firebaseConfig = {}, options = {}) => {
         return result;
       case UPDATE:
       case CREATE:
+        console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
+        // console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
             )
           : [];
-        const currentData = type === CREATE?{}:params.previousData//data.resourcesData[resourceName][itemId] || {};
-        const uploadResults = await Promise.all(uploads); 
+        const currentData = type === CREATE ? {} : params.previousData; //  data.resourcesData[resourceName][itemId] || {};
+        const uploadResults = await Promise.all(uploads);
         result = await save(
           itemId,
           params.data,
