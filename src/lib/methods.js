@@ -77,9 +77,11 @@ const upload = async (
   const rawFile = file.rawFile;
 
   const result = {};
+  const ref = firebase;
+  // CUSTOM FIREBASE UOPLOAD METHOD CAN COME IN HERE IN AN IF STATEMENT
+
   if (file && rawFile && rawFile.name) {
-    const ref = firebase
-      .storage()
+    ref.storage()
       .ref()
       .child(`${resourcePath || resourceName}/${id}/${fieldName}`);
     const snapshot = await ref.put(rawFile);
