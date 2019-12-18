@@ -66,6 +66,7 @@ export default (config = {}) => {
       let auth = firebase.auth().currentUser;
 
       if (!auth || !alreadySignedIn) {
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         auth = await firebase.auth().signInWithEmailAndPassword(username, password);
       }
 
