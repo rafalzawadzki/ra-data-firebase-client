@@ -245,7 +245,7 @@ const getList = async (params, resourceName, tag) => {
 
 
     // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter.releasedate !== undefined)) {
+    if (params.filter.releasedate !== undefined) {
       /**
        * this line checks if params has a release date property
        * and if that property is a number
