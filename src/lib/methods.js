@@ -120,7 +120,7 @@ const save = async (
       uploadResult ? Object.assign(data, uploadResult) : false
     );
   }
-
+  
   if (isNew) {
     Object.assign(data, {
       [timestampFieldNames.createdAt]: new Date().getTime()
@@ -238,9 +238,14 @@ const getList = async (params, resourceName, tag) => {
     const last = lastPageIX[IXName];
     const lastPage = paginationPage[IXName] || 1;
 
+
+
     let fb = firebase.firestore().collection(resourceName);
+
+
+
     // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter.hasOwnProperty("releasedate")) {
+    if (params.filter.releasedate !== undefined)) {
       /**
        * this line checks if params has a release date property
        * and if that property is a number
@@ -299,7 +304,7 @@ const getList = async (params, resourceName, tag) => {
       if (page > lastPage && last) {
         fb = fb.startAfter(last);
       } else if (page < lastPage && first) {
-        fb = fb.endBefore(first);
+        fb = fb.endBefore(first); 
       } else if (last) {
         fb = fb.startAt(first);
       }
@@ -338,6 +343,7 @@ const getList = async (params, resourceName, tag) => {
       const keys = values.map(i => i.id);
       const data = values ? values.slice(_start, _end) : [];
       const ids = keys.slice(_start, _end) || [];
+
       const total = 100000000000; // values ? values.length : 0;
       return { data, ids, total };
     }
