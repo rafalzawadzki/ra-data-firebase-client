@@ -246,15 +246,17 @@ const getList = async (params, resourceName, tag) => {
 
     // checks if the property on the incoming parameter from dataProvider has value releasedate
     if (params.filter.releasedate !== undefined) {
-      /**
-       * this line checks if params has a release date property
-       * and if that property is a number
-       * this was done because the sorting order of tracks was reverted
-       */
-      field = "releasedate";
-      fb = fb
-        .where(field, "<=", params.filter.releasedate)
-        .orderBy(field, order);
+        field = "releasedate";
+        fb = fb.where(field, "<=", params.filter.releasedate);
+
+        fb = fb.orderBy(field, order);
+        if (page > lastPage && last) {
+          fb = fb.startAfter(last);
+        } else if (page < lastPage && first) {
+          fb = fb.endBefore(first); 
+        } else if (last) {
+          fb = fb.startAt(first);
+        }
 
         let snapshots = await fb.limit(perPage).get();
         let lastitem = {};
@@ -266,6 +268,7 @@ const getList = async (params, resourceName, tag) => {
           values.push(data);
           lastitem = data;
         }
+
         paginationPage[IXName] = page;
         lastPageIX[IXName] = lastitem[field];
         firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
@@ -293,6 +296,7 @@ const getList = async (params, resourceName, tag) => {
     }
     
     if (params.filter) {
+      
       const fields = Object.keys(params.filter);
       for (let i = 0; i < fields.length; i++) {
         // eslint-disable-next-line prettier/prettier

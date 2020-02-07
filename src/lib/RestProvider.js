@@ -85,9 +85,11 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
     let result = null;
     switch (type) {
       case GET_LIST:
-        console.log('from ra-data-firestore-json GET_LIST', resourceName, params);
+        console.log('PARAMETERS TO GET LIST', resourceName, params);
+          // if ()
         result = await getList(params, resourceName, resourcesData[resourceName]);
-        if (resourceName === 'albums') {
+        /*
+        if (resourceName === 'albums' && params.data ===  undefined) {
 
             // to get the album tracks, if the request is an album, we'll send a request to tracks and for each track with same id as album, we'll make an array of them
             params = {
@@ -120,8 +122,9 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
             }
                 
           }
+          */
         
-        // console.log("RESULT FROM GET LIST REQUEST ", result);
+        console.log("RESULT FROM GET LIST REQUEST ", result);
         return result;
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
@@ -151,6 +154,14 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
       case UPDATE:
       case CREATE:
         console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
+        if (type === "CREATE" && resourceName === "albums") {
+            params.id = params.data.artist;
+            resourceName = "artists";
+            let artist_name = await getOne(params, resourceName, resourcesData[resourceName]);
+            delete params.id;
+            resourceName = "albums";
+            params.data.artist_name = artist_name.data.name;
+        };
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
         // console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
