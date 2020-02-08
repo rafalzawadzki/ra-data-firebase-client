@@ -21,7 +21,7 @@ export const PostList = props => (
   <List {...props}>
     <Datagrid>
       <TextField source="id" />
-      <ReferenceField label="User" source="userId" reference="users" allowEmpty>
+      <ReferenceField label="User" source="user.id" reference="users" allowEmpty>
         <TextField source="name" />
       </ReferenceField>
       <TextField source="title" />
@@ -35,7 +35,7 @@ export const PostEdit = props => (
   <Edit {...props}>
     <SimpleForm>
       <DisabledInput source="id" />
-      <ReferenceInput label="User" source="userId" reference="users">
+      <ReferenceInput label="User" source="user.id" reference="users">
         <SelectInput optionText="name" />
       </ReferenceInput>
       <TextInput source="title" />
@@ -50,7 +50,7 @@ export const PostEdit = props => (
 export const PostCreate = props => (
   <Create {...props}>
     <SimpleForm>
-      <ReferenceInput label="User" source="userId" reference="users" allowEmpty>
+      <ReferenceInput label="User" source="user.id" reference="users" allowEmpty>
         <SelectInput optionText="name" />
       </ReferenceInput>
       <TextInput source="title" />
