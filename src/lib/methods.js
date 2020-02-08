@@ -56,7 +56,7 @@ const addUploadFeature = requestHandler => (type, resource, params) => {
 const getImageSize = file => {
   return new Promise(resolve => {
     const img = document.createElement("img");
-    img.onload = function() {
+    img.onload = function () {
       resolve({
         width: this.width,
         height: this.height
@@ -221,9 +221,14 @@ const getOne = async (params, resourceName, resourceData) => {
  * sort: { field: 'title', order: 'ASC' },
  * filter: { author_id: 12 }
  */
+let rootPage = {};
 let firstPageIX = {};
 let lastPageIX = {};
 let paginationPage = {};
+let totalIX = {}
+let offTotalIX = {}
+let lastIXName = ""
+let ixPages = {};
 
 const getList = async (params, resourceName, tag) => {
   //  handles get list requests from dataProvider in uduX admin-portal
@@ -231,62 +236,24 @@ const getList = async (params, resourceName, tag) => {
     const perPage = 100;
     const { page } = params.pagination;
     let values = [];
-    let field = "created";
+    // TODO: use timestampFieldNames property to get created field
+    let pageField = "created";
     const order = "desc";
-    const IXName = `${resourceName}${tag || ""}`;
+    const IXName = `${resourceName}${tag || ""}${params.filter ? Object.keys(params.filter).join() + Object.values(params.filter) : ""}`;
+    if (IXName !== lastIXName) {
+      firstPageIX = {}
+      lastPageIX = {}
+      lastIXName = IXName
+      ixPages = {}
+      totalIX = {}
+      rootPage = { [IXName]: page }
+    }
     const first = firstPageIX[IXName];
     const last = lastPageIX[IXName];
     const lastPage = paginationPage[IXName] || 1;
 
     let fb = firebase.firestore().collection(resourceName);
-    // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter.hasOwnProperty("releasedate")) {
-      /**
-       * this line checks if params has a release date property
-       * and if that property is a number
-       * this was done because the sorting order of tracks was reverted
-       */
-      field = "releasedate";
-      fb = fb
-        .where(field, "<=", params.filter.releasedate)
-        .orderBy(field, order);
 
-        let snapshots = await fb.limit(perPage).get();
-        let lastitem = {};
-        for (const snapshot of snapshots.docs) {
-          const data = snapshot.data();
-          if (data && data.id == null) {
-            data["id"] = snapshot.id;
-          }
-          values.push(data);
-          lastitem = data;
-        }
-        paginationPage[IXName] = page;
-        lastPageIX[IXName] = lastitem[field];
-        firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
-
-        console.log(
-          IXName,
-          "page",
-          page,
-          "lastPage",
-          lastPage,
-          "last",
-          last,
-          "first",
-          first,
-          values
-        );
-
-        const _start = 0;
-        const _end = values.length;
-        const keys = values.map(i => i.id);
-        const data = values ? values.slice(_start, _end) : [];
-        const ids = keys.slice(_start, _end) || [];
-        const total = 100000000000; // values ? values.length : 0;
-        return { data, ids, total };
-    }
-    
     if (params.filter) {
       const fields = Object.keys(params.filter);
       for (let i = 0; i < fields.length; i++) {
@@ -294,16 +261,20 @@ const getList = async (params, resourceName, tag) => {
         const field = fields[i];
         fb = fb.where(field, "==", params.filter[field]);
       }
-  
-      fb = fb.orderBy(field, order);
-      if (page > lastPage && last) {
-        fb = fb.startAfter(last);
+      fb = fb.orderBy(pageField, order);
+      if (page > lastPage && last && last[pageField]) {
+        fb = fb.startAfter(last[pageField]);
       } else if (page < lastPage && first) {
-        fb = fb.endBefore(first);
-      } else if (last) {
-        fb = fb.startAt(first);
+        const lastBoundaries = ixPages[`${IXName}_${page}`]
+        if (lastBoundaries) {
+          fb = fb.startAt(lastBoundaries.first[pageField]);
+        } else {
+          fb = fb.endBefore(first[pageField]);
+        }
+      } else if (last && first) {
+        fb = fb.startAt(first[pageField]);
       }
-  
+
       let snapshots = await fb.limit(perPage).get();
       let lastitem = {};
       for (const snapshot of snapshots.docs) {
@@ -314,22 +285,13 @@ const getList = async (params, resourceName, tag) => {
         values.push(data);
         lastitem = data;
       }
+      const newFirst = values.length > 0 ? values[0] : null;
+      const newLast = lastitem;
+
       paginationPage[IXName] = page;
-      lastPageIX[IXName] = lastitem[field];
-      firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
-  
-      console.log(
-        IXName,
-        "page",
-        page,
-        "lastPage",
-        lastPage,
-        "last",
-        last,
-        "first",
-        first,
-        values
-      );
+      lastPageIX[IXName] = newLast;
+      firstPageIX[IXName] = newFirst;
+      ixPages[`${IXName}_${page}`] = { first: newFirst, last: newLast }
       // if (params.sort) {
       //   values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
       // }
@@ -338,10 +300,24 @@ const getList = async (params, resourceName, tag) => {
       const keys = values.map(i => i.id);
       const data = values ? values.slice(_start, _end) : [];
       const ids = keys.slice(_start, _end) || [];
-      const total = 100000000000; // values ? values.length : 0;
-      return { data, ids, total };
+      if (totalIX[IXName]) {
+        if (page === rootPage[IXName]) {
+          offTotalIX[IXName] = perPage
+        } else {
+          if (page < lastPage) {
+            offTotalIX[IXName] = totalIX[IXName] - data.length
+          } else {
+            offTotalIX[IXName] = offTotalIX[IXName] + data.length
+          }
+        }
+      } else {
+        offTotalIX[IXName] = data.length
+      }
+      // TODO: simplify, dont use ternary ops
+      totalIX[IXName] = totalIX[IXName] ? totalIX[IXName] + (offTotalIX[IXName] > totalIX[IXName] ? data.length : 0) : data.length
+      return { data, ids, total: totalIX[IXName] };
     }
-    
+
   } else {
     throw new Error("Error processing request");
   }
