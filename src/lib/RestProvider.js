@@ -85,8 +85,13 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
     let result = null;
     switch (type) {
       case GET_LIST:
+<<<<<<< HEAD
         console.log('PARAMETERS TO GET LIST', resourceName, params);
           // if ()
+=======
+        // //console.log('GET_LIST');
+        //console.log('from ra-data-firestore-json ', type, resourceName, params);
+>>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
         result = await getList(params, resourceName, resourcesData[resourceName]);
         /*
         if (resourceName === 'albums' && params.data ===  undefined) {
@@ -128,7 +133,7 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
         return result;
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
-        // console.log('GET_MANY');
+        // //console.log('GET_MANY');
         return result;
 
       case GET_MANY_REFERENCE:
@@ -137,22 +142,31 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
         return result;
 
       case GET_ONE:
-        // console.log('GET_ONE');
+        // //console.log('GET_ONE');
         result = await getOne(params, resourceName, resourcesData[resourceName]);
         return result;
 
       case DELETE:
+<<<<<<< HEAD
         console.log('DELETE', type, resourceName, params);
+=======
+        // //console.log('DELETE');
+>>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
         const uploadFields = resourcesUploadFields[resourceName] ? resourcesUploadFields[resourceName] : [];
         result = await del(params.id, resourceName, resourcesPaths[resourceName], uploadFields);
         return result;
 
       case DELETE_MANY:
+<<<<<<< HEAD
         console.log('DELETE_MANY', type, resourceName, params);
+=======
+        // //console.log('DELETE_MANY');
+>>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
         result = await delMany(params.ids, resourceName, resourcesData[resourceName]);
         return result;
       case UPDATE:
       case CREATE:
+<<<<<<< HEAD
         console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
         if (type === "CREATE" && resourceName === "albums") {
             params.id = params.data.artist;
@@ -162,8 +176,11 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
             resourceName = "albums";
             params.data.artist_name = artist_name.data.name;
         };
+=======
+        //console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
+>>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
-        // console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
+        // //console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
