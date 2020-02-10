@@ -255,53 +255,6 @@ const getList = async (params, resourceName, tag) => {
 
 
     let fb = firebase.firestore().collection(resourceName);
-<<<<<<< HEAD
-
-
-
-    // checks if the property on the incoming parameter from dataProvider has value releasedate
-    if (params.filter.releasedate !== undefined) {
-        field = "releasedate";
-        fb = fb.where(field, "<=", params.filter.releasedate);
-
-        fb = fb.orderBy(field, order);
-        if (page > lastPage && last) {
-          fb = fb.startAfter(last);
-        } else if (page < lastPage && first) {
-          fb = fb.endBefore(first); 
-        } else if (last) {
-          fb = fb.startAt(first);
-        }
-
-        let snapshots = await fb.limit(perPage).get();
-        let lastitem = {};
-        for (const snapshot of snapshots.docs) {
-          const data = snapshot.data();
-          if (data && data.id == null) {
-            data["id"] = snapshot.id;
-          }
-          values.push(data);
-          lastitem = data;
-        }
-
-        paginationPage[IXName] = page;
-        lastPageIX[IXName] = lastitem[field];
-        firstPageIX[IXName] = values.length > 0 ? values[0][field] : null;
-
-        console.log(
-          IXName,
-          "page",
-          page,
-          "lastPage",
-          lastPage,
-          "last",
-          last,
-          "first",
-          first,
-          values
-        );
-=======
->>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
 
     if (params.filter) {
       
@@ -315,11 +268,6 @@ const getList = async (params, resourceName, tag) => {
       if (page > lastPage && last && last[pageField]) {
         fb = fb.startAfter(last[pageField]);
       } else if (page < lastPage && first) {
-<<<<<<< HEAD
-        fb = fb.endBefore(first); 
-      } else if (last) {
-        fb = fb.startAt(first);
-=======
         const lastBoundaries = ixPages[`${IXName}_${page}`]
         if (lastBoundaries) {
           fb = fb.startAt(lastBoundaries.first[pageField]);
@@ -328,7 +276,6 @@ const getList = async (params, resourceName, tag) => {
         }
       } else if (last && first) {
         fb = fb.startAt(first[pageField]);
->>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
       }
 
       let snapshots = await fb.limit(perPage).get();
@@ -356,11 +303,6 @@ const getList = async (params, resourceName, tag) => {
       const keys = values.map(i => i.id);
       const data = values ? values.slice(_start, _end) : [];
       const ids = keys.slice(_start, _end) || [];
-<<<<<<< HEAD
-
-      const total = 100000000000; // values ? values.length : 0;
-      return { data, ids, total };
-=======
       if (totalIX[IXName]) {
         if (page === rootPage[IXName]) {
           offTotalIX[IXName] = perPage
@@ -377,7 +319,6 @@ const getList = async (params, resourceName, tag) => {
       // TODO: simplify, dont use ternary ops
       totalIX[IXName] = totalIX[IXName] ? totalIX[IXName] + (offTotalIX[IXName] > totalIX[IXName] ? data.length : 0) : data.length
       return { data, ids, total: totalIX[IXName] };
->>>>>>> d3180405e2583d254c56ee594117374b4fb96a2e
     }
 
   } else {
