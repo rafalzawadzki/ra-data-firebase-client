@@ -86,45 +86,9 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
     switch (type) {
       case GET_LIST:
         // //console.log('GET_LIST');
-        //console.log('from ra-data-firestore-json ', type, resourceName, params);
+        console.log('GET_LIST from ra-data-firestore-json', type, resourceName, params);
         result = await getList(params, resourceName, resourcesData[resourceName]);
-        /*
-        if (resourceName === 'albums' && params.data ===  undefined) {
-
-            // to get the album tracks, if the request is an album, we'll send a request to tracks and for each track with same id as album, we'll make an array of them
-            params = {
-                pagination: {
-                page: 1,
-                perPage: 10
-              },
-              sort : {
-                field: "id",
-                order: "DESC"
-              },
-              filter : {}
-            };
-            let albumTracks = await getList(params, "tracks", resourcesData["tracks"]);
-            let album = albumTracks.data.map(album => album.album);
-            let albumIdsLength = result.ids.length;
-            let tracksIdLength = album.length;
-            // console.log('THE ALBUM TRACKS', tracksIdLength);
-            let theTracks = [];
-            for (let i = 0; i < albumIdsLength; i++) {
-                for(let v = 0; v < tracksIdLength; v++) {
-                  if (result.ids[i] === album[v]) {
-                    // console.log("found this id", album[v]);
-                    theTracks.push(album[v]);
-                  }
-                }
-                result.data[i].track_length = theTracks.length;
-                // console.log(`the number of tracks for ${result.ids[i]} is ${theTracks.length}`)
-                theTracks = [];
-            }
-                
-          }
-          */
-        
-        console.log("RESULT FROM GET LIST REQUEST ", result);
+        console.log("RESULT FROM ra-data-firestore-json GET_LIST REQUEST ",resourceName, result);
         return result;
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
@@ -148,7 +112,7 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
         return result;
 
       case DELETE_MANY:
-        // //console.log('DELETE_MANY');
+        console.log("GOT TO DELETE MANEY", type, resourceName, params);
         result = await delMany(params.ids, resourceName, resourcesData[resourceName]);
         return result;
       case UPDATE:
