@@ -222,7 +222,7 @@ const getList = async (params, resourceName, resourceData) => {
     }
 
     if (params.sort) {
-      values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
+      values.sort(sortBy(`${params.sort.order === 'ASC' ? '' : '-'}${params.sort.field}`));
     }
 
     const keys = values.map(i => i.id);
