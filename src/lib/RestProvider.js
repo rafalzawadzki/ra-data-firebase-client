@@ -1,5 +1,3 @@
-/* eslint-disable no-unmodified-loop-condition */
-/* eslint-disable prettier/prettier */
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
@@ -21,7 +19,7 @@ const BaseConfiguration = {
   }
 };
 
-const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
+const RestProvider = (firebaseConfig = {}, options = {}) => {
   options = Object.assign({}, BaseConfiguration, options);
   const { timestampFieldNames, trackedResources } = options;
 
@@ -34,9 +32,6 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
   if (firebase.apps.length === 0) {
     firebase.initializeApp(firebaseConfig);
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
-    firebase.firestore().settings({
-      timestampsInSnapshots: true
-    });
   }
 
   /* Functions */
@@ -85,58 +80,57 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
     let result = null;
     switch (type) {
       case GET_LIST:
-        // //console.log('GET_LIST');
-        console.log('GET_LIST from ra-data-firestore-json', type, resourceName, params);
+        // console.log('GET_LIST');
         result = await getList(params, resourceName, resourcesData[resourceName]);
-        console.log("GET_LIST from ra-data-firestore-json RESULTS ",resourceName, result);
         return result;
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
-        // //console.log('GET_MANY');
+        // console.log('GET_MANY');
         return result;
 
       case GET_MANY_REFERENCE:
-        // console.l og('GET_MANY_REFERENCE');
+        // console.log('GET_MANY_REFERENCE');
         result = await getManyReference(params, resourceName, resourcesData[resourceName]);
         return result;
 
       case GET_ONE:
-        // //console.log('GET_ONE');
+        // console.log('GET_ONE');
         result = await getOne(params, resourceName, resourcesData[resourceName]);
         return result;
 
       case DELETE:
-        // //console.log('DELETE');
+        // console.log('DELETE');
         const uploadFields = resourcesUploadFields[resourceName] ? resourcesUploadFields[resourceName] : [];
         result = await del(params.id, resourceName, resourcesPaths[resourceName], uploadFields);
         return result;
 
       case DELETE_MANY:
-        console.log("GOT TO DELETE MANEY", type, resourceName, params);
+        // console.log('DELETE_MANY');
         result = await delMany(params.ids, resourceName, resourcesData[resourceName]);
         return result;
       case UPDATE:
       case CREATE:
-        console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
-        let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
-        // //console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
+        // console.log('UPDATE/CREATE');
+        let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], resourcesData[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
           ? resourcesUploadFields[resourceName].map(field =>
               upload(field, params.data, itemId, resourceName, resourcesPaths[resourceName])
             )
           : [];
-        const currentData = type === CREATE ? {} : params.previousData; //  data.resourcesData[resourceName][itemId] || {};
+        const currentData = resourcesData[resourceName][itemId] || {};
         const uploadResults = await Promise.all(uploads);
+
         result = await save(
           itemId,
           params.data,
           currentData,
           resourceName,
-          null,
+          resourcesPaths[resourceName],
           firebaseSaveFilter,
           uploadResults,
           type === CREATE,
-          timestampFieldNames
+          timestampFieldNames,
+          firebaseConfig.storageBucket
         );
         return result;
 

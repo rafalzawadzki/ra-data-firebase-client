@@ -1,16 +1,8 @@
-/* eslint-disable prettier/prettier */
-import firebase from "firebase/app";
-import "firebase/firestore";
-import "firebase/storage";
-import { CREATE } from "react-admin";
-
-// function isEmpty(obj) { // function for checking for empty objects
-//     for(var key in obj) {
-//         if(obj.hasOwnProperty(key))
-//             return false;
-//     }
-//     return true;
-// };
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import 'firebase/storage';
+import sortBy from 'sort-by';
+import { CREATE } from 'react-admin';
 
 const convertFileToBase64 = file =>
   new Promise((resolve, reject) => {
@@ -22,14 +14,10 @@ const convertFileToBase64 = file =>
   });
 
 const addUploadFeature = requestHandler => (type, resource, params) => {
-  if (type === "UPDATE") {
+  if (type === 'UPDATE') {
     if (params.data.image && params.data.image.length) {
-      const formerPictures = params.data.image.filter(
-        p => !(p.rawFile instanceof File)
-      );
-      const newPictures = params.data.image.filter(
-        p => p.rawFile instanceof File
-      );
+      const formerPictures = params.data.image.filter(p => !(p.rawFile instanceof File));
+      const newPictures = params.data.image.filter(p => p.rawFile instanceof File);
 
       return Promise.all(newPictures.map(convertFileToBase64))
         .then(base64Pictures =>
@@ -55,8 +43,8 @@ const addUploadFeature = requestHandler => (type, resource, params) => {
 
 const getImageSize = file => {
   return new Promise(resolve => {
-    const img = document.createElement("img");
-    img.onload = function () {
+    const img = document.createElement('img');
+    img.onload = function() {
       resolve({
         width: this.width,
         height: this.height
@@ -66,31 +54,24 @@ const getImageSize = file => {
   });
 };
 
-const upload = async (
-  fieldName,
-  submitedData,
-  id,
-  resourceName,
-  resourcePath
-) => {
-  const file = submitedData[fieldName] && submitedData[fieldName][0];
+const upload = async (fieldName, submitedData, id, resourceName, resourcePath) => {
+  let file = submitedData[fieldName];
+  file = Array.isArray(file) ? file[0] : file;
   const rawFile = file.rawFile;
 
   const result = {};
-  const ref = firebase;
-  // CUSTOM FIREBASE UOPLOAD METHOD CAN COME IN HERE IN AN IF STATEMENT
-
   if (file && rawFile && rawFile.name) {
-    ref.storage()
+    const ref = firebase
+      .storage()
       .ref()
-      .child(`${resourcePath || resourceName}/${id}/${fieldName}`);
+      .child(`${resourcePath}/${id}/${fieldName}`);
     const snapshot = await ref.put(rawFile);
+    const downloadURL = await snapshot.ref.getDownloadURL();
     result[fieldName] = [{}];
     result[fieldName][0].uploadedAt = new Date();
-    result[fieldName][0].src =
-      snapshot.downloadURL.split("?").shift() + "?alt=media";
+    result[fieldName][0].src = downloadURL;
     result[fieldName][0].type = rawFile.type;
-    if (rawFile.type.indexOf("image/") === 0) {
+    if (rawFile.type.indexOf('image/') === 0) {
       try {
         const imageSize = await getImageSize(file);
         result[fieldName][0].width = imageSize.width;
@@ -113,35 +94,57 @@ const save = async (
   firebaseSaveFilter,
   uploadResults,
   isNew,
-  timestampFieldNames
+  timestampFieldNames,
+  Bucket
 ) => {
+  let file = Object.keys(data).reduce((acc, property) => {
+    let item = data[property];
+    if (typeof item === 'object' && item.rawFile) {
+      firebase.app().storage(`gs://${Bucket}`);
+      let metadata = {
+        contentType: `${item.type}`
+      };
+      uploadTask = firebase
+        .app()
+        .storage(`gs://${Bucket}`)
+        .child()
+        .put(item, metadata);
+
+      uploadTask.then(() => {
+        uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+          acc[property] = downloadURL;
+          delete data[property];
+          return acc;
+        });
+      });
+    }
+
+    if (!acc[property]) {
+      acc[property] = data[property];
+    }
+
+    return acc;
+  }, {});
+
   if (uploadResults) {
-    uploadResults.map(uploadResult =>
-      uploadResult ? Object.assign(data, uploadResult) : false
-    );
-  }
-  
-  if (isNew) {
-    Object.assign(data, {
-      [timestampFieldNames.createdAt]: new Date().getTime()
-    });
+    uploadResults.map(uploadResult => (uploadResult ? (file = { ...data, ...uploadResult }) : false));
   }
 
-  data = Object.assign(
-    previous,
-    { [timestampFieldNames.updatedAt]: new Date().getTime() },
-    data
-  );
+  if (isNew) {
+    file = { file, [timestampFieldNames.createdAt]: new Date() };
+  }
+
+  file = { previous, [timestampFieldNames.updatedAt]: new Date(), file };
 
   if (!data.id) {
-    data.id = id;
+    file.id = id;
   }
 
   await firebase
     .firestore()
-    .doc(`${resourceName}/${data.id}`)
-    .set(firebaseSaveFilter(data));
-  return { data };
+    .doc(`${resourcePath}/${file.id}`)
+    .set(firebaseSaveFilter(file));
+  return { file };
 };
 
 const del = async (id, resourceName, resourcePath, uploadFields) => {
@@ -150,14 +153,14 @@ const del = async (id, resourceName, resourcePath, uploadFields) => {
       firebase
         .storage()
         .ref()
-        .child(`${resourcePath || resourceName}/${id}/${fieldName}`)
+        .child(`${resourcePath}/${id}/${fieldName}`)
         .delete()
     );
   }
 
   await firebase
     .firestore()
-    .doc(`${resourceName}/${id}`)
+    .doc(`${resourcePath}/${id}`)
     .delete();
   return { data: id };
 };
@@ -177,16 +180,16 @@ const getItemID = (params, type, resourceName, resourcePath, resourceData) => {
   if (!itemId) {
     itemId = firebase
       .firestore()
-      .collection(resourceName)
+      .collection(resourcePath)
       .doc().id;
   }
 
   if (!itemId) {
-    throw new Error("ID is required");
+    throw new Error('ID is required');
   }
 
   if (resourceData && resourceData[itemId] && type === CREATE) {
-    throw new Error("ID already in use");
+    throw new Error('ID already in use');
   }
 
   return itemId;
@@ -204,14 +207,14 @@ const getOne = async (params, resourceName, resourceData) => {
       const data = result.data();
 
       if (data && data.id == null) {
-        data["id"] = result.id;
+        data['id'] = result.id;
       }
       return { data: data };
     } else {
-      throw new Error("Id not found");
+      throw new Error('Id not found');
     }
   } else {
-    throw new Error("Id not found");
+    throw new Error('Id not found');
   }
 };
 
@@ -221,114 +224,47 @@ const getOne = async (params, resourceName, resourceData) => {
  * sort: { field: 'title', order: 'ASC' },
  * filter: { author_id: 12 }
  */
-let rootPage = {};
-let firstPageIX = {};
-let lastPageIX = {};
-let paginationPage = {};
-let totalIX = {}
-let offTotalIX = {}
-let lastIXName = ""
-let ixPages = {};
 
-const getList = async (params, resourceName, tag) => {
-  //  handles get list requests from dataProvider in uduX admin-portal
-  // console.log("GET_LIST from ra-data-firestore-json", params, resourceName, tag);
+const getList = async (params, resourceName, resourceData) => {
   if (params.pagination) {
-    const perPage = 100;
-    const { page } = params.pagination;
     let values = [];
-    // TODO: use timestampFieldNames property to get created field
-    let pageField = "created";
-        const order = "desc";
-    const IXName = `${resourceName}${tag || ""}${params.filter ? Object.keys(params.filter).join() + Object.values(params.filter) : ""}`;
-    if (IXName !== lastIXName) {
-      firstPageIX = {}
-      lastPageIX = {}
-      lastIXName = IXName
-      ixPages = {}
-      totalIX = {}
-      rootPage = { [IXName]: page }
+    let snapshots = await firebase
+      .firestore()
+      .collection(resourceName)
+      .get();
+
+    for (const snapshot of snapshots.docs) {
+      const data = snapshot.data();
+      if (data && data.id == null) {
+        data['id'] = snapshot.id;
+      }
+      values.push(data);
     }
-    const first = firstPageIX[IXName];
-    const last = lastPageIX[IXName];
-    const lastPage = paginationPage[IXName] || 1;
-
-
-
-    let fb = firebase.firestore().collection(resourceName);
 
     if (params.filter) {
-      
-      const fields = Object.keys(params.filter);
-      for (let i = 0; i < fields.length; i++) {
-        // eslint-disable-next-line prettier/prettier
-        const field = fields[i];
-        fb = fb.where(field, "==", params.filter[field]);
-      }
-      fb = fb.orderBy(pageField, order);
-      if (page > lastPage && last && last[pageField]) {
-        fb = fb.startAfter(last[pageField]);
-      } else if (page < lastPage && first) {
-        const lastBoundaries = ixPages[`${IXName}_${page}`]
-        if (lastBoundaries) {
-          fb = fb.startAt(lastBoundaries.first[pageField]);
-        } else {
-          fb = fb.endBefore(first[pageField]);
+      values = values.filter(item => {
+        let meetsFilters = true;
+        for (const key of Object.keys(params.filter)) {
+          meetsFilters = item[key] === params.filter[key];
         }
-      } else if (last && first) {
-        fb = fb.startAt(first[pageField]);
-      }
-
-      let snapshots = await fb.limit(perPage).get();
-      let lastitem = {};
-      for (const snapshot of snapshots.docs) {
-        const data = snapshot.data();
-        if (data && data.id == null) {
-          data["id"] = snapshot.id;
-        }
-        values.push(data);
-        lastitem = data;
-      }
-      const newFirst = values.length > 0 ? values[0] : null;
-      const newLast = lastitem;
-
-      paginationPage[IXName] = page;
-      lastPageIX[IXName] = newLast;
-      firstPageIX[IXName] = newFirst;
-      ixPages[`${IXName}_${page}`] = { first: newFirst, last: newLast }
-      // if (params.sort) {
-      //   values.sort(sortBy(`${params.sort.order === 'ASC' ? '-' : ''}${params.sort.field}`));
-      // }
-      const _start = 0;
-      const _end = values.length;
+        return meetsFilters;
+      });
+    }
 
     if (params.sort) {
       values.sort(sortBy(`${params.sort.order === 'ASC' ? '' : '-'}${params.sort.field}`));
     }
-    
-      const keys = values.map(i => i.id);
-      const data = values ? values.slice(_start, _end) : [];
-      const ids = keys.slice(_start, _end) || [];
-      if (totalIX[IXName]) {
-        if (page === rootPage[IXName]) {
-          offTotalIX[IXName] = perPage
-        } else {
-          if (page < lastPage) {
-            offTotalIX[IXName] = totalIX[IXName] - data.length
-          } else {
-            offTotalIX[IXName] = offTotalIX[IXName] + data.length
-          }
-        }
-      } else {
-        offTotalIX[IXName] = data.length
-      }
-      // TODO: simplify, dont use ternary ops
-      totalIX[IXName] = totalIX[IXName] ? totalIX[IXName] + (offTotalIX[IXName] > totalIX[IXName] ? data.length : 0) : data.length
-      return { data, ids, total: totalIX[IXName] };
-    }
 
+    const keys = values.map(i => i.id);
+    const { page, perPage } = params.pagination;
+    const _start = (page - 1) * perPage;
+    const _end = page * perPage;
+    const data = values ? values.slice(_start, _end) : [];
+    const ids = keys.slice(_start, _end) || [];
+    const total = values ? values.length : 0;
+    return { data, ids, total };
   } else {
-    throw new Error("Error processing request");
+    throw new Error('Error processing request');
   }
 };
 
@@ -346,15 +282,10 @@ const getManyReference = async (params, resourceName, resourceData) => {
   if (params.target) {
     if (!params.filter) params.filter = {};
     params.filter[params.target] = params.id;
-    let { data, total } = await getList(
-      params,
-      resourceName,
-      resourceData,
-      "MANY_REFERENCE"
-    );
+    let { data, total } = await getList(params, resourceName, resourceData);
     return { data, total };
   } else {
-    throw new Error("Error processing request");
+    throw new Error('Error processing request');
   }
 };
 

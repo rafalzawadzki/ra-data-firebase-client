@@ -1,5 +1,5 @@
 /* globals localStorage */
-import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from 'react-admin';
+import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK, AUTH_GET_PERMISSIONS } from 'react-admin';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
@@ -17,7 +17,7 @@ const baseConfig = {
       const profile = snapshot.data();
 
       if (profile && profile[config.userAdminProp]) {
-        const firebaseToken = auth.user.getIdToken();
+        const firebaseToken = await auth.user.getIdToken();
         let user = { auth, profile, firebaseToken };
         localStorage.setItem(config.localStorageTokenName, firebaseToken);
         return user;
@@ -61,12 +61,23 @@ export default (config = {}) => {
       return true;
     }
 
+    if (type === AUTH_GET_PERMISSIONS) {
+      console.log('AUTH_GET_PERMISSIONS');
+      await firebaseLoaded();
+
+      if (!firebase.auth().currentUser) {
+        throw new Error('sign_in_error');
+      }
+
+      const token = await firebase.auth().currentUser.getIdTokenResult();
+      return token.claims;
+    }
+
     if (type === AUTH_LOGIN) {
       const { username, password, alreadySignedIn } = params;
       let auth = firebase.auth().currentUser;
 
       if (!auth || !alreadySignedIn) {
-        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         auth = await firebase.auth().signInWithEmailAndPassword(username, password);
       }
 

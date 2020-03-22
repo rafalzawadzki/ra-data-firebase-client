@@ -14,7 +14,7 @@ const firebaseConfig = {
   messagingSenderId: '796768771332'
 };
 
-const trackedResources = [{ name: 'posts', isPublic: true }, { name: 'users', isPublic: true }];
+const trackedResources = [{ name: 'posts' }, { name: 'users' }];
 
 const authConfig = {
   userProfilePath: '/users/',
