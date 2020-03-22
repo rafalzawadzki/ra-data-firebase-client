@@ -88,7 +88,7 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
         // //console.log('GET_LIST');
         console.log('GET_LIST from ra-data-firestore-json', type, resourceName, params);
         result = await getList(params, resourceName, resourcesData[resourceName]);
-        console.log("RESULT FROM ra-data-firestore-json GET_LIST REQUEST ",resourceName, result);
+        console.log("GET_LIST from ra-data-firestore-json RESULTS ",resourceName, result);
         return result;
       case GET_MANY:
         result = await getMany(params, resourceName, resourcesData[resourceName]);
@@ -117,7 +117,7 @@ const RestProvider = (firebaseConfig = {}, options = {}, others={}) => {
         return result;
       case UPDATE:
       case CREATE:
-        //console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
+        console.log('I HAVE BEEN SENT A FILE', type, resourceName, params);
         let itemId = getItemID(params, type, resourceName, resourcesPaths[resourceName], {});
         // //console.log('CHECKS FOR THE ITEMS PASSED TO UPLOAD FUNCTION ', params.data, itemId, resourceName, resourcesPaths[resourceName]);
         const uploads = resourcesUploadFields[resourceName]
