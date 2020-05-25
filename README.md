@@ -1,3 +1,8 @@
+# Project discontinued
+This project is no longer maintained and does not support React Admin v3.
+Please use the alternative: https://github.com/benwinding/react-admin-firebase
+
+
 # ra-data-firestore-client
 
 <!-- [START badges] -->
